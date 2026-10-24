@@ -120,7 +120,7 @@ Deploy `dist/` to a static host. Configure an SPA fallback to `index.html` for `
 Verified in this workspace on **2026-10-24**:
 
 - TypeScript and production Vite build passed.
-- **13/13** non-networked tests passed, including streaming and multimodal adapter tests with mocks.
+- **15/15** non-networked tests passed, including streaming, multimodal adapters, and the 28-provider reference directory.
 - npm audit reported **0 vulnerabilities**.
 - Development and production Chromium smoke checks passed at **1440×1000** and **390×844** with no runtime JavaScript errors or horizontal overflow.
 - REA produced observed local DOM/page-inspection and screenshot evidence.

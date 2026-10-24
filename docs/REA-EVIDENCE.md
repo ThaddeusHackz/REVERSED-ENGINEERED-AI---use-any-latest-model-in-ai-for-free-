@@ -2,7 +2,7 @@
 
 **Evidence date:** 2026-10-24
 
-**Scope:** public Puter AI Gateway reconstruction, public ChatGPT interaction reference, and local AI Studio verification.
+**Scope:** public Puter AI Gateway reconstruction, public ChatGPT interaction reference, REA setup/MCP verification, and local implementation inspection.
 
 This record separates observed evidence from reconstruction decisions. Raw browser/REA artifacts are generated under `.cache/` and intentionally excluded from Git.
 
@@ -19,19 +19,20 @@ Observed page identity and content:
 - Core message: one API for 500+ models, no API keys or servers, user-pays authentication, and rapid frontend integration.
 - Coding prompt: `Build an AI chat app using Puter.js`
 - Agent actions: Claude Code, Codex, Claude, ChatGPT, Cursor, and Lovable.
-- Major sections: navigation, hero, provider marquee, capability bento grid, three-step integration guide, model/provider directory, FAQ, prompt CTA, and footer.
+- Major sections: navigation, hero, provider marquee, capability bento grid, three-step integration guide, provider wall, FAQ, prompt CTA, and footer.
+- Provider directory: 28 unique providers in two repeated 14-provider sequences. `src/data.test.ts` protects the observed names, order, destinations, and image URLs.
 
 Public stylesheet reference: <https://developer.puter.com/styles.css>
 
-Reference-derived design evidence included:
+Reference-derived design evidence includes:
 
 - Roboto/Arial typography and primary blue `#1d49e7`.
 - Fixed translucent, blurred navigation.
-- White hero with generous vertical spacing and an 88px rounded gradient icon.
-- Light-gray feature areas, white cards, a three-column bento layout, and 20px gaps.
-- Blue timeline accents, responsive prompt-box/modal rules, and a dark `#333` footer.
+- White hero with `160px 0 60px` desktop padding, an 88px rounded gradient icon, and a 40px icon glyph.
+- Light-gray feature area, 8px white bento cards with 20px padding, inline heading icons, three columns, and 20px gaps.
+- Blue timeline accents, documented mobile timeline offsets, responsive prompt-box/modal rules, and a dark `#333` footer.
 
-The implementation uses original React components and CSS derived from these public observations; it is not a copied proprietary application bundle.
+The final audit removed invented feature headings, badges, extra CTA content, and an extra footer strip. Capability links and all 28 provider entries were aligned with the public content. The implementation uses original React components and CSS derived from these public observations; it is not a copied proprietary application bundle.
 
 ### Official API references
 
@@ -52,57 +53,65 @@ The model picker requests the live chat catalog at runtime. The fallback catalog
 
 Public reference: <https://chatgpt.com/>
 
-The unauthenticated public fetch exposed mostly login/no-auth content and did not provide enough visual evidence for a faithful pixel-level reproduction. Accordingly, the Studio uses a familiar ChatGPT-style interaction pattern—sidebar history, central greeting, model picker, suggestion cards, streaming conversation, and bottom composer—without claiming to be an exact copy of an authenticated ChatGPT session.
+The unauthenticated public fetch exposed mostly login/no-auth content and did not provide enough visual evidence for a pixel-level reproduction of an authenticated ChatGPT session. The Studio therefore uses the familiar public interaction pattern—sidebar history, central greeting, model picker, suggestion cards, streaming conversation, and bottom composer—without claiming to be an exact authenticated ChatGPT copy.
 
 No authenticated ChatGPT account was accessed or automated.
 
 ## REA setup and registration evidence
 
-- Installed with `rea-agents@latest`; resolved release: `6.7.0`.
-- Setup client: `claude_code`.
-- Doctor result: `healthy: true`, with aligned skill identity.
-- Installed reverse-engineering skill version: `42`.
-- Project MCP registration: `.mcp.json`, server name `rea`, pinned launcher `npx -y rea-agents@6.7.0 mcp`.
-- Live MCP stdio initialize and `tools/list`: successful; protocol `2025-03-26`; 207 tools discovered.
+The approved dry-run contained two actions: configure Claude Code and install the reverse-engineering skill. Applying setup reported `status: ready` and applied both actions.
 
-This verifies installation, registration, and MCP availability. It does not imply that every REA provider or remote browser route is available in the sandbox.
+- Node.js: `v22.22.3`, satisfying the requested 22.19+ requirement.
+- REA release: `6.7.0`.
+- Scoped doctor: `healthy: true`.
+- Skill: version `42`, 207 tools, state `aligned`.
+- Claude Code registration: `npx -y rea-agents@6.7.0 mcp`, state `aligned`.
+- Project MCP registration: `.mcp.json`, server name `rea`, with the same pinned launcher.
+- Live MCP stdio initialize: server `rea 6.7.0`, protocol `2025-03-26`.
+- Live MCP discovery: 207 tools and 6 prompts.
 
-## Successful local REA observations
+This verifies installation, registration, and MCP availability. Optional native-analysis providers are not required for web observation.
 
-A local Chromium CDP target displaying the reconstructed Studio was inspected with REA. These are **local implementation observations**, not captures of the remote Puter or ChatGPT origins.
+## Remote REA attempts and network boundary
 
-| Operation | Evidence ID | Observed result |
+A Chromium CDP browser was pointed at both public origins. REA target discovery worked, but the sandbox closed both remote connections before a same-origin document existed. The browser location became `chrome-error://chromewebdata/`; REA correctly refused page inspection as `target_not_allowed`.
+
+| Target | REA evidence | Result |
 | --- | --- | --- |
-| `list_browser_targets` | `ev_44e4387d2007f52e62c2fcd391e2eaaf6e9ca85d604bdfdb092d3a4a5b922af7` | Headless Chromium 153 target titled `Puter AI Studio` at the local `/app` route |
-| `inspect_web_page` | `ev_5b1a069f62107a04b073c739fda71a522747702b08234fcfacf66fdaae78c14f` | Observed page target, DOM, accessibility structure, scripts, resources, metadata, and policy/completeness information |
-| `capture_web_screenshot` | `ev_7b12f4533870956c7092ba5d2f7e388ac05019cb35161e17e395ab8b6a616ac6` | Observed 800×600 PNG viewport artifact with a recorded SHA-256 identity |
+| `https://developer.puter.com/ai/` | `ev_99cc1a2b61d90dffea6e60ec0e77d0c8abddb3bf30736a0a4e97c1b345977825` | Target discovered; remote document unavailable after network failure |
+| `https://chatgpt.com/` | `ev_0b7824b59420759537a91df7fcd1cc54988e4fbbe880528dbf4087f14ab05e26` | Target discovered; `ERR_CONNECTION_CLOSED`, no inspectable public document |
 
-The inspection reported `policy_filtered` completeness: some script text, accessibility details, metadata, and storage-related fields were not approved or were outside the capture policy. The evidence is therefore useful for structural observation, not a claim of a complete accessibility or security audit.
+No successful remote visual capture is claimed. Public page, stylesheet, and API artifacts obtained through the page-fetching tool were used for the implementation audit instead.
 
-Generated local files:
+## Final local REA observations
 
-```text
-.cache/rea/inspect-studio.json
-.cache/rea/studio-screenshot.json
-```
+REA successfully inspected the corrected implementation running locally. These are **local implementation observations**, not remote-reference captures.
 
-## Independent browser verification
+| Page/operation | Evidence ID | Observed result |
+| --- | --- | --- |
+| Local target discovery | `ev_0771bcd8b9a3642811ae46aee28fef2824e3e8300993027920579a9e0ec8a5e6` | Headless Chromium 153 target for the corrected local app |
+| Landing `inspect_web_page` | `ev_f8f5fe51fadf3f28d9ae0f9be640f481aca4810c2fea0366f9ecd66640ae669e` | 930 DOM nodes, 31 resources, 1,021 accessibility nodes |
+| Landing `capture_web_screenshot` | `ev_ef62f94e5fe2ebd27217dd22dcef185bd3e1218f025612f80198db4f43b91044` | Observed 800×600 PNG viewport artifact |
+| Studio `inspect_web_page` | `ev_c48474ebc47219f4b76025886f0112fa514ace53da8123b139e27ccf5ad48ff4` | 254 DOM nodes, 9 resources, 157 accessibility nodes |
+| Studio `capture_web_screenshot` | `ev_37adfa534e72b78043f31d2296cccdcefbf188024392180bd1deef6497a769d3` | Observed 800×600 PNG viewport artifact |
 
-Playwright/Sparticuz Chromium smoke checks covered both development and production builds:
+The inspections report policy-filtered completeness. They provide structural evidence, not a complete accessibility or security audit.
 
-- Landing page at 1440×1000 and 390×844.
-- Studio chat empty state and composer.
-- Images workspace and Audio tab navigation.
-- Mobile sidebar open state.
-- No runtime JavaScript exceptions.
-- No horizontal document overflow at the tested widths.
+Generated local evidence is under `.cache/rea-current/`.
 
-Generated screenshots and `report.json` are under `.cache/screenshots/`.
+## Independent verification
 
-## Limitations and rejected evidence
+- TypeScript and production Vite build passed.
+- Vitest passed 15 tests, including streaming, multimodal adapters, utility behavior, and the 28-provider reference directory.
+- npm audit reported zero vulnerabilities.
+- Chromium checks covered the landing page, Studio, Images, Audio, and mobile sidebar at 1440×1000 and 390×844.
+- No runtime JavaScript exceptions or horizontal document overflow occurred at the tested widths.
 
-- Direct sandbox connections to the public Puter origin and Puter API/WebSocket endpoints failed at the network/TLS layer. Public page and stylesheet evidence was therefore obtained through the available page-fetching tool instead.
-- A live remote REA capture of `developer.puter.com/ai/` or an authenticated ChatGPT session is **not** claimed.
-- REA `analyze-web-bundle` against the Vite development page exhausted the Node heap while processing development modules. That failed/empty output is not counted as evidence; the narrower page inspection and screenshot operations succeeded.
-- External provider images/fonts and Puter connectivity can fail in the sandbox. The application’s fallback rendering still worked, but this is not evidence that live provider generation succeeded.
-- No paid AI call was made. Streaming and multimodal behavior were tested with non-networked mocks; end-to-end live provider calls require explicit user action and Puter sign-in in a network-capable browser.
+Screenshots and `report.json` are under `.cache/screenshots/`.
+
+## Limitations
+
+- External provider images/fonts and Puter API/WebSocket connections can fail in the sandbox. Fallback rendering worked, but that is not evidence of a successful live provider response.
+- No paid AI call was made. Streaming and multimodal behavior were tested with non-networked mocks.
+- End-to-end live provider calls require explicit user action and Puter sign-in in a network-capable browser.
+- Arena connectors remain agent-side development/deployment tools; no connector credentials are embedded in browser code.

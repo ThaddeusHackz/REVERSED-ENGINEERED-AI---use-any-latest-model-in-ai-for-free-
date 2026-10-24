@@ -32,7 +32,7 @@ There is no `.env` file and no application backend. The official Puter.js SDK ha
 The approved setup used the current `rea-agents@latest` release and applied the Claude Code client configuration plus the reverse-engineering skill:
 
 ```bash
-npx -y rea-agents@latest setup --client claude_code --yes --json
+npx -y rea-agents@latest setup --client claude_code --yes --format json
 ```
 
 For reproducible subsequent commands, pin the installed release:
@@ -71,8 +71,9 @@ A live stdio MCP negotiation was also performed directly against this launcher:
 
 - MCP server: `rea 6.7.0`
 - Protocol: `2025-03-26`
-- Initialize and `tools/list`: successful
+- Initialize, `tools/list`, and `prompts/list`: successful
 - Discovered tools: `207`
+- Discovered prompts: `6`
 
 The MCP server speaks stdio and is intended to be launched by an MCP-compatible client; it is not an HTTP server for the website.
 

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
-  ArrowRight, Box, Check, ChevronDown, CircleDollarSign, Cloud,
-  Code2, Copy, Database, ExternalLink, KeyRound, Layers3, Menu, Network,
+  ArrowRight, Check, ChevronDown, CircleDollarSign, Cloud,
+  Copy, Database, KeyRound, Layers3, Menu, Network,
   ShieldCheck, Sparkles, X, Zap,
 } from 'lucide-react'
-import { BUILD_PROMPT, providers } from '../data'
+import { providers } from '../data'
 import { copyText } from '../lib/utils'
 import PromptBox from './PromptBox'
 import PuterMark from './PuterMark'
@@ -77,7 +77,6 @@ function Navigation({ onOpenStudio }: LandingPageProps) {
               <h2 className="gs-modal-title" id="prompt-modal-title">Ship a Full-Stack App with One Prompt</h2>
               <p className="gs-modal-sub">Copy this prompt into your AI coding agent, or open it in one below.</p>
               <PromptBox />
-              <button className="text-button" type="button" onClick={() => { setPromptOpen(false); onOpenStudio() }}>Or open the working AI Studio <ArrowRight /></button>
             </div>
           </section>
         </div>
@@ -86,15 +85,39 @@ function Navigation({ onOpenStudio }: LandingPageProps) {
   )
 }
 
+const heroProviderRows = [
+  ['Mistral', 'xAI', 'Z.ai', 'Microsoft', 'Alibaba', 'Perplexity', 'Cohere', 'ByteDance', 'OpenRouter'],
+  ['OpenAI', 'Claude', 'Gemini', 'Grok', 'DeepSeek'],
+]
+
 function ProviderMarquee() {
-  const row = [...providers.slice(0, 9), ...providers.slice(0, 9)]
   return (
     <div className="provider-marquee" aria-label="Supported AI providers">
-      <div className="provider-track">
-        {row.map((provider, index) => <span className="provider-word" key={`${provider.name}-${index}`} style={{ color: provider.color }}>{provider.name}</span>)}
-      </div>
-      <div className="provider-track provider-track-reverse">
-        {[...providers.slice(9), ...providers.slice(9)].map((provider, index) => <span className="provider-word" key={`${provider.name}-${index}`} style={{ color: provider.color }}>{provider.name}</span>)}
+      {heroProviderRows.map((providersRow, rowIndex) => {
+        const repeated = [...providersRow, ...providersRow]
+        return <div className={`provider-track ${rowIndex ? 'provider-track-reverse' : ''}`} key={providersRow.join('-')}>{repeated.map((provider, index) => <span className="provider-word" key={`${provider}-${index}`}>{provider}</span>)}</div>
+      })}
+    </div>
+  )
+}
+
+type Provider = (typeof providers)[number]
+
+function ProviderCard({ provider }: { provider: Provider }) {
+  return (
+    <a className="provider-card" href={provider.href} target="_blank" rel="noreferrer" title={provider.name}>
+      <span className="provider-avatar" style={{ color: provider.color }}><span>{provider.short}</span>{provider.image && <img src={provider.image} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} />}</span>
+      <span>{provider.name}</span>
+    </a>
+  )
+}
+
+function ProviderWallRow({ items, reverse = false }: { items: Provider[]; reverse?: boolean }) {
+  const repeated = [...items, ...items]
+  return (
+    <div className="provider-wall-row">
+      <div className={`provider-wall-track ${reverse ? 'reverse' : ''}`}>
+        {repeated.map((provider, index) => <ProviderCard provider={provider} key={`${provider.name}-${index}`} />)}
       </div>
     </div>
   )
@@ -132,7 +155,7 @@ export default function LandingPage({ onOpenStudio }: LandingPageProps) {
       <main>
         <section className="hero">
           <div className="site-container hero-content">
-            <div className="hero-icon"><PuterMark size={48} /></div>
+            <div className="hero-icon"><PuterMark size={40} /></div>
             <h1 className="hero-title">AI Gateway for AI-Generated Apps</h1>
             <p className="hero-lead">One API for 500+ AI models, with a syntax that AI coding agents use correctly.</p>
             <p className="hero-subtitle">No API keys, no servers, no cost to you.<br />Start building in seconds.</p>
@@ -146,26 +169,23 @@ export default function LandingPage({ onOpenStudio }: LandingPageProps) {
 
         <section className="bento-boxes" id="features">
           <div className="site-container">
-            <div className="section-heading"><span className="eyebrow">One library. Every capability.</span><h2>AI that just works.</h2><p>From your first prompt to production, without the infrastructure.</p></div>
             <div className="bento-grid">
               <article className="bento-box cloud-storage">
-                <Sparkles />
-                <h3>AI Integration</h3>
+                <h3><Sparkles />AI Integration</h3>
                 <p>Access 500+ models, including GPT, Claude, Gemini, Grok, DeepSeek, Nano Banana, GPT Image, and FLUX, through a single API.</p>
                 <ul><li>Switch models by changing one parameter</li><li>Always access the latest models</li><li>No vendor lock-in</li></ul>
-                <div className="mini-models"><span>GPT-5.6</span><span>Claude</span><span>Gemini</span><span>Grok</span><span>+500</span></div>
               </article>
-              <article className="bento-box"><KeyRound /><h3>No API Keys Required</h3><p>Skip the sign-ups, key management, and credential juggling. Just add Puter.js and start building immediately.</p><div className="feature-foot"><Check /> Keyless by design</div></article>
-              <article className="bento-box"><CircleDollarSign /><h3>User-Pays Model</h3><p><a href="https://docs.puter.com/user-pays-model/" target="_blank" rel="noreferrer">Your users cover their own AI costs</a>, so you can ship AI features without worrying about billing, rate limits, or runaway API expenses.</p><div className="feature-foot"><Check /> Scale without API bills</div></article>
-              <article className="bento-box"><Cloud /><h3>No Servers to Manage</h3><p>Works entirely client-side. No servers to provision, no infrastructure to maintain. True serverless AI from your frontend code.</p><div className="feature-foot"><Check /> Zero infrastructure</div></article>
-              <article className="bento-box"><Layers3 /><h3>Multiple AI Capabilities</h3><p>Chat, image generation, vision analysis, text-to-speech, speech-to-text, voice changing, OCR, and text-to-video, all from the same library.</p><button className="feature-link" type="button" onClick={onOpenStudio}>Explore every capability <ArrowRight /></button></article>
+              <article className="bento-box"><h3><KeyRound />No API Keys Required</h3><p>Skip the sign-ups, key management, and credential juggling. Just add Puter.js and start building immediately.</p></article>
+              <article className="bento-box"><h3><CircleDollarSign />User-Pays Model</h3><p><a href="https://docs.puter.com/user-pays-model/" target="_blank" rel="noreferrer">Your users cover their own AI costs</a>, so you can ship AI features without worrying about billing, rate limits, or runaway API expenses.</p></article>
+              <article className="bento-box"><h3><Cloud />No Servers to Manage</h3><p>Works entirely client-side. No servers to provision, no infrastructure to maintain. True serverless AI from your frontend code.</p></article>
+              <article className="bento-box"><h3><Layers3 />Multiple AI Capabilities</h3><p>Chat, <a href="https://developer.puter.com/image-generation/" target="_blank" rel="noreferrer">image generation</a>, vision analysis, <a href="https://developer.puter.com/text-to-speech/" target="_blank" rel="noreferrer">text-to-speech</a>, <a href="https://developer.puter.com/speech-to-text/" target="_blank" rel="noreferrer">speech-to-text</a>, <a href="https://developer.puter.com/voice-changer/" target="_blank" rel="noreferrer">voice changing</a>, <a href="https://developer.puter.com/ocr/" target="_blank" rel="noreferrer">OCR</a>, and <a href="https://developer.puter.com/video-generation/" target="_blank" rel="noreferrer">text-to-video</a>, all from the same library.</p></article>
             </div>
           </div>
         </section>
 
         <section className="how-it-works">
           <div className="site-container">
-            <div className="section-heading"><span className="eyebrow">From zero to AI in three steps</span><h2>How It Works</h2></div>
+            <div className="section-heading"><h2>How It Works</h2></div>
             <div className="timeline">
               <div className="timeline-item"><div className="timeline-content"><h3><span className="timeline-step">1</span> Include Puter.js</h3><p>Add the Puter.js script tag to your HTML, or install it with npm:</p><CodeBlock code={'<script src="https://js.puter.com/v2/"></script>'} /><CodeBlock language="shell" code="npm install @heyputer/puter.js" /></div></div>
               <div className="timeline-item"><div className="timeline-content"><h3><span className="timeline-step">2</span> Use AI in your code!</h3><p>You can now use AI APIs directly from your frontend code. Here’s an example:</p><CodeBlock language="javascript" code={'puter.ai.chat("Explain AI like I\'m five!");'} /><p>View the <a href="https://docs.puter.com/AI/" target="_blank" rel="noreferrer">AI documentation</a> for a full list of available features.</p></div></div>
@@ -177,13 +197,9 @@ export default function LandingPage({ onOpenStudio }: LandingPageProps) {
         <section className="provider-section">
           <div className="site-container">
             <div className="section-heading"><h2>Access 500+ Models From Leading AI Providers</h2><p>One API, endless possibilities. Choose from the best AI providers, all in one place.</p></div>
-            <div className="provider-grid">
-              {providers.map(provider => (
-                <a className="provider-card" href={provider.href} target="_blank" rel="noreferrer" key={provider.name} title={provider.name}>
-                  <span className="provider-avatar" style={{ color: provider.color }}><span>{provider.short}</span>{provider.image && <img src={provider.image} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} />}</span>
-                  <span>{provider.name}</span>
-                </a>
-              ))}
+            <div className="provider-wall" aria-label="AI provider directory">
+              <ProviderWallRow items={providers.slice(0, 14)} />
+              <ProviderWallRow items={providers.slice(14)} reverse />
             </div>
             <div className="models-link-row"><a href="https://developer.puter.com/ai/models/" target="_blank" rel="noreferrer">See all AI models <ArrowRight /></a></div>
           </div>
@@ -200,7 +216,6 @@ export default function LandingPage({ onOpenStudio }: LandingPageProps) {
           <div className="site-container">
             <h2>Ship a Full-Stack App with One Prompt</h2>
             <PromptBox />
-            <button className="studio-cta" type="button" onClick={onOpenStudio}><Sparkles /> Open the AI Studio <ArrowRight /></button>
           </div>
         </section>
       </main>
@@ -214,7 +229,6 @@ export default function LandingPage({ onOpenStudio }: LandingPageProps) {
             <div className="footer-column"><h4>Build</h4><button type="button" onClick={onOpenStudio}>AI Studio</button><a href="https://docs.puter.com/playground/ai-chatgpt/">Playground</a><a href="https://github.com/HeyPuter/puter">GitHub</a><a href="https://puter.com/">Puter.com</a></div>
           </div>
         </div>
-        <div className="site-container footer-bottom"><span>Built with Puter.js</span><a href={BUILD_PROMPT ? 'https://docs.puter.com/llms.txt' : '#'} target="_blank" rel="noreferrer"><Code2 /> llms.txt <ExternalLink /></a><Box /></div>
       </footer>
     </div>
   )
