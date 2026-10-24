@@ -25,20 +25,20 @@ Vite binds to `0.0.0.0`; use the local or preview URL it prints. The two routes 
 - `/` — AI Gateway landing page
 - `/app` — AI Studio
 
-There is no `.env` file and no application backend. The official Puter.js SDK handles model calls and browser authentication.
+There is no `.env` file and no application backend. WebLLM runs local chat in a dedicated browser worker; the official Puter.js SDK handles hosted model calls and browser authentication.
 
 ## 3. Install REA
 
 The approved setup used the current `rea-agents@latest` release and applied the Claude Code client configuration plus the reverse-engineering skill:
 
 ```bash
-npx -y rea-agents@latest setup --client claude_code --yes --json
+npx -y rea-agents@latest setup --client claude_code --yes --format json
 ```
 
 For reproducible subsequent commands, pin the installed release:
 
 ```bash
-npx -y rea-agents@6.7.0 doctor --client claude_code --skill --format json
+npx -y rea-agents@6.7.0 doctor --client claude_code --format json
 ```
 
 Observed result:
@@ -71,8 +71,9 @@ A live stdio MCP negotiation was also performed directly against this launcher:
 
 - MCP server: `rea 6.7.0`
 - Protocol: `2025-03-26`
-- Initialize and `tools/list`: successful
+- Initialize, `tools/list`, and `prompts/list`: successful
 - Discovered tools: `207`
+- Discovered prompts: `6`
 
 The MCP server speaks stdio and is intended to be launched by an MCP-compatible client; it is not an HTTP server for the website.
 
@@ -85,14 +86,21 @@ REA, MCP registration, and any Arena-connected applications are available to the
 - Arena itself is not represented as a REA setup client.
 - No account automation, cookie collection, or credential collection is part of the reference reconstruction.
 
-## 6. Sign in and use Puter
+## 6. Use local AI or hosted Puter
 
-Use the Studio’s **Sign in** button to start the official Puter authentication flow. Live usage is associated with the signed-in user’s Puter account.
+For credit-free local chat, keep the default **SmolLM2 360M** or choose another **Local** model. Submitting a prompt starts WebLLM in a dedicated worker; no Puter sign-in is used. The first run downloads model artifacts from WebLLM’s public model hosts and caches them in the browser.
+
+- Use a WebGPU-capable browser and select a model that fits the device’s GPU memory and storage.
+- Local inference has no per-message credits, but hardware, browser, and model-license limits still apply.
+- Only Phi 3.5 Vision accepts image input among the included local models.
+- The app does not bypass quotas or billing for hosted proprietary models.
+
+For hosted AI, use the Studio’s **Sign in** button to start the official Puter authentication flow. Hosted usage is associated with the signed-in user’s Puter account.
 
 - Do not add OpenAI, Anthropic, Gemini, or other provider keys to this project.
-- Do not assume all catalog entries are free. Inspect Puter’s model metadata and pricing.
+- Do not assume all hosted catalog entries are free. Inspect Puter’s model metadata and pricing.
 - Keep media/OCR **Test mode** enabled for sample output without credits.
-- Only disable test mode when you intentionally want live generation and accept account usage.
+- Only disable test mode when you intentionally want live hosted generation and accept account usage.
 
 ## 7. Verification commands
 
@@ -108,8 +116,8 @@ With the development server running:
 npm run test:visual
 ```
 
-The visual script checks the landing page, Studio chat, Images and Audio navigation, and the mobile sidebar. It captures 1440px and 390px layouts, records runtime/console errors, and checks document width for horizontal overflow.
+The visual script checks the landing page, Studio chat, six local model options, the local default, Images and Audio navigation, and the mobile sidebar. It captures 1440px and 390px layouts, records runtime/console errors, and checks document width for horizontal overflow. WebGPU is explicitly disabled during the local request check, which verifies the compatibility message without downloading model artifacts.
 
-The sandbox blocks some external TLS/WebSocket connections. Those network failures are recorded separately from application runtime errors. Verification deliberately avoids paid provider calls.
+The sandbox blocks some external TLS/WebSocket connections. Those network failures are recorded separately from application runtime errors. Verification deliberately avoids paid provider calls and local model downloads. Actual local inference requires a user-run WebGPU browser and an initial model download.
 
 See [REA-EVIDENCE.md](REA-EVIDENCE.md) for the reference sources, evidence IDs, and limitations.

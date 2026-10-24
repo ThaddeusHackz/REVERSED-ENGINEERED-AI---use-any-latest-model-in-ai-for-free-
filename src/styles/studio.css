@@ -122,6 +122,23 @@
 .model-list-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 100px; color: #8b8c91; font-size: 12px; }
 .model-list-empty svg { width: 16px; }
 .model-popover-foot { padding: 10px 16px; border-top: 1px solid #eeeeef; background: #fafafa; color: #929399; font-size: 9.5px; line-height: 1.5; }
+.model-trigger-icon.is-local, .local-mode-pill { color: #237a4b; }
+.local-mode-pill svg { width: 14px; height: 14px; }
+.model-option.is-local .provider-dot { border-color: #cee8d9; background: #f0faf4; color: #237a4b; }
+.provider-dot svg { width: 14px; height: 14px; }
+.catalog-loading { display: flex; align-items: center; gap: 7px; margin: 0 14px 10px; padding: 8px 10px; border-radius: 8px; background: #f1f8f4; color: #397054; font-size: 10px; }
+.catalog-loading svg { width: 12px; }
+.empty-mark.is-local { border-color: #dcebe2; background: linear-gradient(180deg,#fff,#edf7f1); color: #237a4b; }
+.local-progress { width: min(768px,100%); margin: 0 auto 10px; padding: 11px 13px; border: 1px solid #dcebe2; border-radius: 13px; background: #f7fcf9; color: #397054; }
+.local-progress-copy { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.local-progress-copy svg { flex: 0 0 15px; width: 15px; }
+.local-progress-copy span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.local-progress-copy strong { font-size: 10px; font-weight: 600; }
+.local-progress-track { height: 4px; margin-top: 9px; overflow: hidden; border-radius: 5px; background: #dcebe2; }
+.local-progress-track span { display: block; height: 100%; border-radius: inherit; background: #359465; transition: width .2s ease; }
+.local-progress small { display: block; margin-top: 7px; color: #6f8b7b; font-size: 9px; }
+.composer-icon:disabled { opacity: .35; cursor: not-allowed; }
+.composer-icon:disabled:hover { background: transparent; }
 .mode-topbar-title { font-size: 14px; font-weight: 550; }
 .chat-panel { display: flex; flex-direction: column; height: 100%; }
 .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }

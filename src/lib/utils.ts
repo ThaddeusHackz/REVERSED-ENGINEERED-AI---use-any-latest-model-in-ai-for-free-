@@ -16,12 +16,13 @@ export function formatProvider(provider: string) {
     openai: 'OpenAI', claude: 'Claude', anthropic: 'Anthropic', google: 'Google',
     xai: 'xAI', deepseek: 'DeepSeek', minimax: 'MiniMax', meta: 'Meta Llama',
     mistral: 'Mistral AI', mistralai: 'Mistral AI', openrouter: 'OpenRouter',
+    local: 'On your device',
   }
   return names[provider.toLowerCase()] ?? provider.replace(/[-_]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase())
 }
 
 export function isFreeModel(model: PuterModel) {
-  if (model.id.endsWith(':free')) return true
+  if (model.provider === 'local' || model.id.endsWith(':free')) return true
   return model.cost?.input === 0 && model.cost?.output === 0
 }
 
@@ -33,6 +34,7 @@ export function formatContext(value?: number) {
 }
 
 export function formatModelCost(model: PuterModel) {
+  if (model.provider === 'local') return 'No credits'
   if (isFreeModel(model)) return 'Free variant'
   const cost = model.cost
   if (!cost || cost.input == null) return null

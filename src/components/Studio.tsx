@@ -1,19 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowLeft, AudioLines, BookOpen, ChevronDown, Image as ImageIcon, LogOut,
+  ArrowLeft, AudioLines, BookOpen, ChevronDown, Cpu, Image as ImageIcon, LogOut,
   Menu, MessageSquare, PanelLeft, Plus, ScanText, Search, Sparkles, Trash2,
   UserRound, Video, X,
 } from 'lucide-react'
 import { fallbackModels } from '../data'
+import { getLocalModel, isLocalModelId, localModels, streamLocalChat } from '../lib/local'
 import { generateSpeech, listPuterModels, puterAuth, streamChat } from '../lib/puter'
 import { createConversationTitle, getErrorMessage, uid } from '../lib/utils'
-import type { ChatMessage, Conversation, MessageAttachment, PuterModel, PuterUser, StudioMode } from '../types'
+import type { ChatMessage, Conversation, LocalProgress, MessageAttachment, PuterModel, PuterUser, StudioMode } from '../types'
 import CapabilityPanel from './CapabilityPanel'
 import ChatPanel from './ChatPanel'
 import ModelPicker from './ModelPicker'
 import PuterMark from './PuterMark'
 
 const STORAGE_KEY = 'puter-ai-studio-conversations-v1'
+const MODEL_STORAGE_KEY = 'puter-ai-studio-model-v2'
+
+function loadSelectedModel() {
+  try { return localStorage.getItem(MODEL_STORAGE_KEY) || localModels[0].id } catch { return localModels[0].id }
+}
 
 function loadConversations(): Conversation[] {
   try {
@@ -32,6 +38,7 @@ const modeItems = [
 
 interface SidebarProps {
   open: boolean
+  isLocal: boolean
   mode: StudioMode
   conversations: Conversation[]
   activeId: string | null
@@ -43,7 +50,7 @@ interface SidebarProps {
   onNavigateHome: () => void
 }
 
-function Sidebar({ open, mode, conversations, activeId, onClose, onModeChange, onSelect, onNew, onDelete, onNavigateHome }: SidebarProps) {
+function Sidebar({ open, isLocal, mode, conversations, activeId, onClose, onModeChange, onSelect, onNew, onDelete, onNavigateHome }: SidebarProps) {
   const [search, setSearch] = useState('')
   const filtered = conversations.filter(conversation => conversation.title.toLowerCase().includes(search.toLowerCase()))
   return (
@@ -68,7 +75,7 @@ function Sidebar({ open, mode, conversations, activeId, onClose, onModeChange, o
         <div className="sidebar-footer">
           <button type="button" onClick={onNavigateHome}><ArrowLeft /><span>AI Gateway home</span></button>
           <a href="https://docs.puter.com/AI/" target="_blank" rel="noreferrer"><BookOpen /><span>Puter AI docs</span></a>
-          <div className="sidebar-powered"><span className="status-dot" /> No API keys · powered by Puter</div>
+          <div className="sidebar-powered"><span className="status-dot" /> {isLocal ? 'On-device · WebLLM · no credits' : 'Hosted by Puter · user-pays'}</div>
         </div>
       </aside>
     </>
@@ -86,7 +93,8 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
   const [modelsError, setModelsError] = useState<string | null>(null)
   const [catalogLive, setCatalogLive] = useState(false)
   const [catalogAttempt, setCatalogAttempt] = useState(0)
-  const [selectedModel, setSelectedModel] = useState(fallbackModels[0].id)
+  const [selectedModel, setSelectedModel] = useState(loadSelectedModel)
+  const [localProgress, setLocalProgress] = useState<LocalProgress | null>(null)
   const [sending, setSending] = useState(false)
   const [user, setUser] = useState<PuterUser | null>(null)
   const [authBusy, setAuthBusy] = useState(false)
@@ -94,7 +102,9 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
   const [toast, setToast] = useState('')
   const abortController = useRef<AbortController | null>(null)
   const activeConversation = conversations.find(conversation => conversation.id === activeId)
-  const visibleModels = models.length ? models : fallbackModels
+  const visibleModels = [...localModels, ...(models.length ? models : fallbackModels)]
+  const isLocal = isLocalModelId(selectedModel)
+  const localChatActive = mode === 'chat' && isLocal
 
   const notify = (message: string) => setToast(message)
 
@@ -109,6 +119,10 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
   }, [conversations])
 
   useEffect(() => {
+    try { localStorage.setItem(MODEL_STORAGE_KEY, selectedModel) } catch { /* Model selection is still retained for this session. */ }
+  }, [selectedModel])
+
+  useEffect(() => {
     let cancelled = false
     setModelsLoading(true)
     setModelsError(null)
@@ -117,7 +131,7 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
         if (cancelled) return
         setModels(result)
         setCatalogLive(true)
-        setSelectedModel(current => result.some(model => model.id === current) ? current : result[0]?.id ?? current)
+        setSelectedModel(current => isLocalModelId(current) || result.some(model => model.id === current) ? current : result[0]?.id ?? current)
       })
       .catch(reason => {
         if (cancelled) return
@@ -172,15 +186,17 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
   const sendMessage = async (prompt: string, attachment?: MessageAttachment) => {
     if (sending) return
     const now = Date.now()
+    const modelForRequest = selectedModel
+    const useLocalModel = isLocalModelId(modelForRequest)
     const id = activeConversation?.id ?? uid()
     const history = activeConversation?.messages ?? []
     const userMessage: ChatMessage = { id: uid(), role: 'user', content: prompt, createdAt: now, attachment }
     const assistantId = uid()
-    const assistantMessage: ChatMessage = { id: assistantId, role: 'assistant', content: '', createdAt: now, model: selectedModel }
+    const assistantMessage: ChatMessage = { id: assistantId, role: 'assistant', content: '', createdAt: now, model: modelForRequest }
     const nextConversation: Conversation = {
       id,
       title: activeConversation?.title ?? createConversationTitle(prompt),
-      model: selectedModel,
+      model: modelForRequest,
       messages: [...history, userMessage, assistantMessage],
       createdAt: activeConversation?.createdAt ?? now,
       updatedAt: now,
@@ -200,7 +216,10 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
     }
 
     try {
-      const result = await streamChat([...history, userMessage], selectedModel, controller.signal, text => updateAssistant(text, true))
+      setLocalProgress(null)
+      const result = useLocalModel
+        ? await streamLocalChat([...history, userMessage], modelForRequest, controller.signal, text => updateAssistant(text, true), progress => setLocalProgress(progress))
+        : await streamChat([...history, userMessage], modelForRequest, controller.signal, text => updateAssistant(text, true))
       if (!result.trim()) updateAssistant('The model returned an empty response. Try again or choose another model.', false)
     } catch (reason) {
       if (controller.signal.aborted) {
@@ -210,6 +229,7 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
       }
     } finally {
       abortController.current = null
+      setLocalProgress(null)
       setSending(false)
     }
   }
@@ -236,6 +256,12 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
 
   const speakResponse = async (text: string) => {
     try {
+      if (isLocal) {
+        if (!('speechSynthesis' in window)) throw new Error('This browser does not provide speech playback.')
+        window.speechSynthesis.cancel()
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 3000)))
+        return
+      }
       const url = await generateSpeech(text.slice(0, 3000), { provider: 'openai', voice: 'alloy' })
       if (!url) throw new Error('Puter did not return audio.')
       await new Audio(url).play()
@@ -245,17 +271,17 @@ export default function Studio({ onNavigateHome }: { onNavigateHome: () => void 
   const modeLabel = modeItems.find(item => item.id === mode)?.label ?? 'Chat'
   return (
     <div className="studio-shell">
-      <Sidebar open={sidebarOpen} mode={mode} conversations={conversations} activeId={activeId} onClose={() => setSidebarOpen(false)} onModeChange={chooseMode} onSelect={id => { setActiveId(id); setMode('chat'); setSidebarOpen(false) }} onNew={newChat} onDelete={deleteConversation} onNavigateHome={onNavigateHome} />
+      <Sidebar open={sidebarOpen} isLocal={localChatActive} mode={mode} conversations={conversations} activeId={activeId} onClose={() => setSidebarOpen(false)} onModeChange={chooseMode} onSelect={id => { setActiveId(id); setMode('chat'); setSidebarOpen(false) }} onNew={newChat} onDelete={deleteConversation} onNavigateHome={onNavigateHome} />
       <section className="studio-main">
         <header className="studio-topbar">
           <div className="topbar-left"><button className="mobile-sidebar-button" type="button" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><Menu /></button><button className="desktop-sidebar-button" type="button" onClick={() => setSidebarOpen(value => !value)} aria-label="Toggle sidebar"><PanelLeft /></button>{mode === 'chat' ? <ModelPicker models={visibleModels} selectedModel={selectedModel} onSelect={selectModel} loading={modelsLoading} error={modelsError} onRetry={() => setCatalogAttempt(value => value + 1)} live={catalogLive} /> : <div className="mode-topbar-title">{modeLabel}</div>}</div>
           <div className="topbar-right">
-            <a className="puter-user-pays" href="https://docs.puter.com/user-pays-model/" target="_blank" rel="noreferrer"><span className="status-dot" /> User-pays</a>
+            {localChatActive ? <a className="puter-user-pays local-mode-pill" href="https://webllm.mlc.ai/docs/" target="_blank" rel="noreferrer"><Cpu /> On-device · no credits</a> : <a className="puter-user-pays" href="https://docs.puter.com/user-pays-model/" target="_blank" rel="noreferrer"><span className="status-dot" /> User-pays</a>}
             {user ? <div className="account-menu"><button className="account-avatar" type="button" onClick={() => setAccountOpen(value => !value)} aria-label="Open Puter account menu">{(user.username ?? user.email ?? 'P').slice(0, 1).toUpperCase()}<ChevronDown /></button>{accountOpen && <div className="account-popover"><span>Signed in to Puter</span><strong>{user.username ?? user.email ?? 'Puter user'}</strong><button type="button" disabled={authBusy} onClick={signOut}><LogOut /> Sign out</button></div>}</div> : <button className="sign-in-button" type="button" disabled={authBusy} onClick={signIn}><UserRound />{authBusy ? 'Connecting…' : 'Sign in'}</button>}
           </div>
         </header>
         <div className="studio-content">
-          {mode === 'chat' ? <ChatPanel key={activeId ?? 'new-chat'} conversation={activeConversation} sending={sending} onSend={sendMessage} onStop={() => abortController.current?.abort()} onSpeak={speakResponse} onOpenAudio={() => setMode('image')} /> : <CapabilityPanel key={mode} mode={mode} onToast={notify} />}
+          {mode === 'chat' ? <ChatPanel key={activeId ?? 'new-chat'} conversation={activeConversation} sending={sending} isLocal={isLocal} supportsVision={Boolean(getLocalModel(selectedModel)?.vision)} localProgress={localProgress} onSend={sendMessage} onStop={() => abortController.current?.abort()} onSpeak={speakResponse} onOpenAudio={() => setMode('image')} /> : <CapabilityPanel key={mode} mode={mode} onToast={notify} />}
         </div>
       </section>
       {toast && <div className="studio-toast" role="status"><Sparkles /><span>{toast}</span><button type="button" onClick={() => setToast('')} aria-label="Dismiss notification"><X /></button></div>}
