@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vite/
+coverage/
+playwright-report/
+test-results/
+.rea-evidence/
+.cache/
+image-search/
+*.local
+.DS_Store
