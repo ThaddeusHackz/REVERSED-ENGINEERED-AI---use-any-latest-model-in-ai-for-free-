@@ -49,6 +49,14 @@ Implementation behavior was checked against the current official documentation:
 
 The model picker requests the live chat catalog at runtime. The fallback catalog is explicitly identified as a fallback and is not represented as the complete 500+ model list.
 
+### WebLLM local-inference reference
+
+Official project: <https://github.com/mlc-ai/web-llm>
+
+The installed `0.2.86` package documents in-browser WebGPU inference, OpenAI-compatible streaming chat, browser caching, and dedicated Web Worker support. The implementation uses `CreateWebWorkerMLCEngine` with `WebWorkerMLCEngineHandler`, and validates its six curated model records against the package’s `prebuiltAppConfig.model_list`.
+
+This is the credit-free alternative to hosted inference: model artifacts are downloaded from public model hosts on first use, while subsequent prompt processing runs on the user’s device. It does not bypass hosted provider billing or quotas.
+
 ### ChatGPT public UI reference
 
 Public reference: <https://chatgpt.com/>
@@ -94,6 +102,9 @@ REA successfully inspected the corrected implementation running locally. These a
 | Landing `capture_web_screenshot` | `ev_ef62f94e5fe2ebd27217dd22dcef185bd3e1218f025612f80198db4f43b91044` | Observed 800×600 PNG viewport artifact |
 | Studio `inspect_web_page` | `ev_c48474ebc47219f4b76025886f0112fa514ace53da8123b139e27ccf5ad48ff4` | 254 DOM nodes, 9 resources, 157 accessibility nodes |
 | Studio `capture_web_screenshot` | `ev_37adfa534e72b78043f31d2296cccdcefbf188024392180bd1deef6497a769d3` | Observed 800×600 PNG viewport artifact |
+| Local-AI Studio target discovery | `ev_ec248e247a764d5793e0a2db89d1bd9701d1b5956c055f23498777b605b03bdc` | Updated local Studio target with the on-device default |
+| Local-AI Studio `inspect_web_page` | `ev_7939511760ff11898ce47c6622adac92bf4cc3220a52afc0bc1f4075eca2fe64` | 284 DOM nodes, 32 resources, 156 accessibility nodes |
+| Local-AI Studio `capture_web_screenshot` | `ev_def69da4fbc1660fe36c405fbfa5e234d8c3d240bb003d51ce70fd2c7db68a80` | Observed 800×600 PNG viewport artifact |
 
 The inspections report policy-filtered completeness. They provide structural evidence, not a complete accessibility or security audit.
 
@@ -102,9 +113,10 @@ Generated local evidence is under `.cache/rea-current/`.
 ## Independent verification
 
 - TypeScript and production Vite build passed.
-- Vitest passed 15 tests, including streaming, multimodal adapters, utility behavior, and the 28-provider reference directory.
+- Vitest passed 19 tests, including local/hosted streaming, local cancellation, multimodal adapters, WebLLM model-record validation, utility behavior, and the 28-provider reference directory.
 - npm audit reported zero vulnerabilities.
-- Chromium checks covered the landing page, Studio, Images, Audio, and mobile sidebar at 1440×1000 and 390×844.
+- Chromium checks covered the landing page, Studio, six local model options, the local default, Images, Audio, and mobile sidebar at 1440×1000 and 390×844.
+- The forced unsupported-WebGPU path displayed the intended compatibility message without downloading model artifacts.
 - No runtime JavaScript exceptions or horizontal document overflow occurred at the tested widths.
 
 Screenshots and `report.json` are under `.cache/screenshots/`.
@@ -112,6 +124,7 @@ Screenshots and `report.json` are under `.cache/screenshots/`.
 ## Limitations
 
 - External provider images/fonts and Puter API/WebSocket connections can fail in the sandbox. Fallback rendering worked, but that is not evidence of a successful live provider response.
-- No paid AI call was made. Streaming and multimodal behavior were tested with non-networked mocks.
-- End-to-end live provider calls require explicit user action and Puter sign-in in a network-capable browser.
+- No paid AI call or local model download was made. Local/hosted streaming and multimodal behavior were tested with non-networked mocks.
+- Actual local inference requires a user-run WebGPU browser and first-time model download; the sandbox result is not represented as a completed local model response.
+- End-to-end hosted provider calls require explicit user action and Puter sign-in in a network-capable browser.
 - Arena connectors remain agent-side development/deployment tools; no connector credentials are embedded in browser code.

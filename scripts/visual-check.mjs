@@ -52,10 +52,26 @@ try {
   await capture(desktop, 'landing-desktop')
   await desktop.screenshot({ path: new URL('landing-full.png', outputDir).pathname, fullPage: true })
 
+  // Force the unsupported-browser path so this check never downloads model weights.
+  await desktop.addInitScript(() => {
+    try { Object.defineProperty(Navigator.prototype, 'gpu', { configurable: true, get: () => undefined }) } catch { /* WebGPU is already unavailable. */ }
+  })
   await desktop.goto(`${baseUrl}/app`, { waitUntil: 'domcontentloaded' })
   await desktop.locator('.chat-empty h1').waitFor()
   await desktop.waitForTimeout(1800)
   await capture(desktop, 'studio-desktop')
+  const defaultModel = await desktop.locator('.model-trigger').innerText()
+  if (!defaultModel.includes('SmolLM2 360M')) throw new Error(`Expected local default model, received: ${defaultModel}`)
+  await desktop.locator('.model-trigger').click()
+  const localModelOptions = await desktop.locator('.model-option.is-local').count()
+  if (localModelOptions !== 6) throw new Error(`Expected 6 local models, received ${localModelOptions}`)
+  results.push({ defaultModel, localModelOptions })
+  await desktop.screenshot({ path: new URL('studio-local-models.png', outputDir).pathname })
+  await desktop.keyboard.press('Escape')
+  await desktop.getByRole('textbox', { name: 'Message local AI' }).fill('Test the local compatibility message')
+  await desktop.getByRole('button', { name: 'Send message' }).click()
+  await desktop.locator('.assistant-message .markdown-body').filter({ hasText: 'Local AI needs WebGPU' }).waitFor()
+  results.push({ localCompatibilityMessage: true })
 
   await desktop.getByRole('button', { name: 'Images', exact: true }).click()
   await desktop.locator('.capability-header h1').waitFor()
@@ -64,6 +80,9 @@ try {
   await desktop.locator('.capability-tabs').waitFor()
   await desktop.getByRole('button', { name: 'Speech to text', exact: true }).click()
   results.push({ audioTab: await desktop.locator('.capability-tabs .active').textContent() })
+
+  // Start the mobile pass with a clean new-chat state after the local error-path check.
+  await desktop.evaluate(() => localStorage.clear())
 
   // This Chromium build runs in single-process mode; resize the same page
   // instead of closing the last tab and opening a new browser context.

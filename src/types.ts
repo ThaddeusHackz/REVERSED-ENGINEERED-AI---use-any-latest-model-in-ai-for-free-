@@ -18,6 +18,11 @@ export interface PuterModel {
   [key: string]: unknown
 }
 
+export interface LocalProgress {
+  progress: number
+  text: string
+}
+
 export interface MessageAttachment {
   name: string
   type: string
